@@ -11,25 +11,20 @@ UPLOAD_FOLDER = "webapp/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Variable global para el modelo
 model = None
 
 def set_model(loaded_model):
-    """Permite inyectar el modelo entrenado desde main.py"""
     global model
     model = loaded_model
-    print("✅ Modelo cargado en Flask")
+    print(" Modelo cargado en Flask")
 
 def preprocess_image(image):
-    """
-    Recibe un objeto PIL.Image y lo convierte a 28x28 normalizado y plano (784).
-    """
-    img = image.convert("L")        # Escala de grises
-    img = img.resize((28, 28))      # Redimensiona
+    img = image.convert("L")
+    img = img.resize((28, 28))
     img_array = np.array(img)
-    img_array = 255 - img_array     # Invertir colores
+    img_array = 255 - img_array
     img_array = img_array.astype("float32") / 255.0
-    img_array = img_array.reshape(1, 784)  # Cambiado a plano
+    img_array = img_array.reshape(1, 784)
     return img_array
 
 @app.route("/", methods=["GET", "POST"])
@@ -58,16 +53,13 @@ def index():
 
             return jsonify({"prediction": pred_digit})
         except Exception as e:
-            print("❌ Error en index:", e)
+            print(" Error en index:", e)
             return jsonify({"error": str(e)}), 500
 
     return render_template("index.html")
 
 @app.route("/predict_base64", methods=["POST"])
 def predict_base64():
-    """
-    Recibe una imagen en formato base64 desde un canvas y devuelve la predicción.
-    """
     try:
         data = request.get_json()
         if "image" not in data:
@@ -84,5 +76,5 @@ def predict_base64():
 
         return jsonify({"prediction": pred_digit})
     except Exception as e:
-        print("❌ Error en predict_base64:", e)
+        print(" Error en predict_base64:", e)
         return jsonify({"error": str(e)}), 500
