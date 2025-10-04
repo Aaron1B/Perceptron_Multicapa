@@ -30,15 +30,6 @@
     <button id="predictBtn">Predecir dibujo</button>
     <div id="resultCanvas"></div>
 
-    <!-- Muestras de dígitos MNIST para arrastrar y probar -->
-    <h2>Arrastra una imagen de ejemplo</h2>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        {% for i in range(10) %}
-            <img src="https://raw.githubusercontent.com/myleott/mnist_png/master/testing/{{ i }}/1.png"
-                 alt="{{ i }}" width="28" height="28" draggable="true"
-                 style="border:1px solid #888; background:#fff; cursor:grab;" id="mnist-img-{{i}}" />
-        {% endfor %}
-    </div>
     <script>
     // Drag & drop MNIST images to file input with preview
     const fileInput = document.getElementById("fileInput");
