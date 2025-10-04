@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>Reconocimiento de Dígitos - MLP</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+    #uploadForm.dragover {
+        border: 2px dashed #007bff;
+        background: #eef6ff;
+    }
+    </style>
 </head>
 <body>
     <h1>Reconocimiento de dígitos escritos a mano</h1>
@@ -34,32 +40,39 @@
         {% endfor %}
     </div>
     <script>
-    // Permitir arrastrar imágenes de ejemplo a la caja de subida y convertirlas a PNG usando canvas
+    // Drag & drop MNIST images to file input with preview
     const fileInput = document.getElementById("fileInput");
+    const uploadForm = document.getElementById("uploadForm");
     document.querySelectorAll("[id^='mnist-img-']").forEach(img => {
         img.addEventListener("dragstart", function(e) {
             e.dataTransfer.setData("text/plain", img.src);
         });
     });
-    const uploadForm = document.getElementById("uploadForm");
     uploadForm.addEventListener("dragover", function(e) {
         e.preventDefault();
+        uploadForm.classList.add("dragover");
+    });
+    uploadForm.addEventListener("dragleave", function(e) {
+        uploadForm.classList.remove("dragover");
     });
     uploadForm.addEventListener("drop", function(e) {
         e.preventDefault();
+        uploadForm.classList.remove("dragover");
         const url = e.dataTransfer.getData("text/plain");
         if (url) {
             const img = new window.Image();
             img.crossOrigin = "Anonymous";
             img.src = url;
             img.onload = function() {
+                // Canvas para asegurar PNG válido y fondo blanco
                 const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
+                canvas.width = 28;
+                canvas.height = 28;
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, 28, 28);
+                ctx.drawImage(img, 0, 0, 28, 28);
                 canvas.toBlob(function(blob) {
-                    const file = new File([blob], "mnist.png", { type: "image/png" });
                     // Vista previa
                     const preview = document.createElement("img");
                     preview.src = URL.createObjectURL(blob);
@@ -71,10 +84,24 @@
                     document.getElementById("resultUpload").appendChild(preview);
                     // Asignar el archivo al input
                     const dt = new DataTransfer();
-                    dt.items.add(file);
+                    dt.items.add(new File([blob], "mnist.png", { type: "image/png" }));
                     fileInput.files = dt.files;
                 }, "image/png");
             };
+        }
+    });
+    // Mostrar vista previa al seleccionar archivo manualmente
+    fileInput.addEventListener("change", function(e) {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const preview = document.createElement("img");
+            preview.src = URL.createObjectURL(file);
+            preview.width = 56;
+            preview.height = 56;
+            preview.style.border = "2px solid #007bff";
+            preview.style.margin = "8px";
+            document.getElementById("resultUpload").innerHTML = "";
+            document.getElementById("resultUpload").appendChild(preview);
         }
     });
     </script>
