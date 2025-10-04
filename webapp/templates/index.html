@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reconocimiento de Dígitos - MLP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Sube o arrastra una imagen con un dígito escrito a mano</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" id="fileInput" accept="image/*">
+        <button type="submit">Predecir</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        const form = document.getElementById("uploadForm");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const response = await fetch("/", { method: "POST", body: formData });
+            const result = await response.json();
+            document.getElementById("result").innerText = 
+                "Predicción del MLP: " + result.prediction;
+        });
+    </script>
+</body>
+</html>

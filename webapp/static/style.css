@@ -1,0 +1,24 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 40px;
+    background: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+form {
+    margin: 20px auto;
+    padding: 20px;
+    border: 2px dashed #666;
+    background: #fff;
+    width: 300px;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+}
