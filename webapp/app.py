@@ -1,28 +1,27 @@
 import os
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
-import tensorflow as tf
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 
-# Configuración Flask
 app = Flask(__name__)
 UPLOAD_FOLDER = "webapp/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# Cargar modelo entrenado
-MODEL_PATH = os.path.join("model", "mnist_mlp.h5")
-model = tf.keras.models.load_model(MODEL_PATH)
+model = None
+
+def set_model(loaded_model):
+    """Permite inyectar el modelo entrenado desde main.py"""
+    global model
+    model = loaded_model
 
 def preprocess_image(image_path):
-    """
-    Convierte la imagen a escala de grises 28x28 y la normaliza.
-    """
-    img = Image.open(image_path).convert("L")  # gris
-    img = img.resize((28, 28))  # redimensionar
+    img = Image.open(image_path).convert("L")
+    img = img.resize((28, 28))
     img_array = np.array(img)
-    img_array = 255 - img_array  # invertir (MNIST: fondo=negro, trazos=blanco)
+    img_array = 255 - img_array  
     img_array = img_array.astype("float32") / 255.0
     img_array = img_array.reshape(1, 28, 28)
     return img_array
@@ -35,11 +34,12 @@ def index():
         file = request.files["file"]
         if file.filename == "":
             return jsonify({"error": "Nombre de archivo vacío"})
+
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
 
-        # Preprocesar y predecir
+        # Predecir
         img_array = preprocess_image(filepath)
         preds = model.predict(img_array)
         pred_digit = int(np.argmax(preds))
@@ -47,6 +47,3 @@ def index():
         return jsonify({"prediction": pred_digit})
 
     return render_template("index.html")
-
-if __name__ == "__main__":
-    app.run(debug=True)
