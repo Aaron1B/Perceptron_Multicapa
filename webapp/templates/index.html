@@ -6,23 +6,148 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Sube o arrastra una imagen con un dígito escrito a mano</h1>
+    <h1>Reconocimiento de dígitos escritos a mano</h1>
+
+    <!-- Opción 1: Subir imagen -->
+    <h2>Sube una imagen</h2>
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" id="fileInput" accept="image/*">
         <button type="submit">Predecir</button>
     </form>
-    <div id="result"></div>
+    <div id="resultUpload"></div>
 
+    <!-- Opción 2: Dibujar en canvas -->
+    <h2>Dibuja un dígito</h2>
+    <canvas id="canvas" width="280" height="280"
+            style="border:1px solid black; background:white;"></canvas><br>
+    <button id="clearBtn">Limpiar</button>
+    <button id="predictBtn">Predecir dibujo</button>
+    <div id="resultCanvas"></div>
+
+    <!-- Muestras de dígitos MNIST para arrastrar y probar -->
+    <h2>Arrastra una imagen de ejemplo</h2>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        {% for i in range(10) %}
+            <img src="https://raw.githubusercontent.com/myleott/mnist_png/master/testing/{{ i }}/1.png"
+                 alt="{{ i }}" width="28" height="28" draggable="true"
+                 style="border:1px solid #888; background:#fff; cursor:grab;" id="mnist-img-{{i}}" />
+        {% endfor %}
+    </div>
     <script>
+    // Permitir arrastrar imágenes de ejemplo a la caja de subida y convertirlas a PNG usando canvas
+    const fileInput = document.getElementById("fileInput");
+    document.querySelectorAll("[id^='mnist-img-']").forEach(img => {
+        img.addEventListener("dragstart", function(e) {
+            e.dataTransfer.setData("text/plain", img.src);
+        });
+    });
+    const uploadForm = document.getElementById("uploadForm");
+    uploadForm.addEventListener("dragover", function(e) {
+        e.preventDefault();
+    });
+    uploadForm.addEventListener("drop", function(e) {
+        e.preventDefault();
+        const url = e.dataTransfer.getData("text/plain");
+        if (url) {
+            const img = new window.Image();
+            img.crossOrigin = "Anonymous";
+            img.src = url;
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob(function(blob) {
+                    const file = new File([blob], "mnist.png", { type: "image/png" });
+                    // Vista previa
+                    const preview = document.createElement("img");
+                    preview.src = URL.createObjectURL(blob);
+                    preview.width = 56;
+                    preview.height = 56;
+                    preview.style.border = "2px solid #007bff";
+                    preview.style.margin = "8px";
+                    document.getElementById("resultUpload").innerHTML = "";
+                    document.getElementById("resultUpload").appendChild(preview);
+                    // Asignar el archivo al input
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                }, "image/png");
+            };
+        }
+    });
+    </script>
+    <script>
+        // ----- Subida de imagen -----
         const form = document.getElementById("uploadForm");
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
-            const response = await fetch("/", { method: "POST", body: formData });
-            const result = await response.json();
-            document.getElementById("result").innerText = 
-                "Predicción del MLP: " + result.prediction;
+            try {
+                const response = await fetch("/", { method: "POST", body: formData });
+                const result = await response.json();
+                if (result.prediction !== undefined) {
+                    document.getElementById("resultUpload").innerText =
+                        "Predicción: " + result.prediction;
+                } else {
+                    document.getElementById("resultUpload").innerText =
+                        "Error: " + result.error;
+                }
+            } catch (err) {
+                console.error(err);
+            }
         });
+
+        // ----- Canvas para dibujar -----
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        let painting = false;
+
+        canvas.addEventListener("mousedown", () => painting = true);
+        canvas.addEventListener("mouseup", () => painting = false);
+        canvas.addEventListener("mousemove", draw);
+
+        function draw(e) {
+            if (!painting) return;
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(e.offsetX, e.offsetY, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Botón limpiar
+        document.getElementById("clearBtn").addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Botón predecir dibujo
+        document.getElementById("predictBtn").addEventListener("click", async () => {
+            const dataURL = canvas.toDataURL("image/png");
+            try {
+                const response = await fetch("/predict_base64", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image: dataURL })
+                });
+                const result = await response.json();
+                if (result.prediction !== undefined) {
+                    document.getElementById("resultCanvas").innerText =
+                        "Predicción: " + result.prediction;
+                } else {
+                    document.getElementById("resultCanvas").innerText =
+                        "Error: " + result.error;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Inicializar canvas en blanco
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     </script>
 </body>
 </html>

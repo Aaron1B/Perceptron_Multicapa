@@ -2,6 +2,9 @@
 Entrenamiento y evaluación de un modelo MLP en MNIST usando el compilador.
 """
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Oculta warnings de TensorFlow
+
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.keras.utils import to_categorical
